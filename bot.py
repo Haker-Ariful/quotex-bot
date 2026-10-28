@@ -2,9 +2,27 @@ import telebot
 from telebot import types
 import random
 from datetime import datetime
+import os
+from flask import Flask
+from threading import Thread
 
 TOKEN = '9254355271:AAHePCwbgTsA_WMdygdt2mDwtOQL_HB6-z4'
 bot = telebot.TeleBot(TOKEN)
+
+# Render-এর জন্য মিনি ওয়েব সার্ভার (যাতে ওয়েব সার্ভিস বন্ধ না হয়)
+app = Flask('')
+
+@app.route('/')
+def home():
+    return "Quotex Bot is Active and Running!"
+
+def run_flask():
+    port = int(os.environ.get('PORT', 10000))
+    app.run(host='0.0.0.0', port=port)
+
+def keep_alive():
+    t = Thread(target=run_flask)
+    t.start()
 
 # প্রধান কারেন্সি পেয়ারসমূহ
 pairs = ["EUR/USD (OTC)", "GBP/USD (OTC)", "AUD/CAD (OTC)", "EUR/JPY", "USD/INR (OTC)", "NZD/USD (OTC)", "USD/JPY (OTC)"]
@@ -29,14 +47,11 @@ def send_welcome(message):
 @bot.callback_query_handler(func=lambda call: True)
 def callback_query(call):
     if call.data == "get_signal":
-        # বর্তমান সময় বের করা
         current_time = datetime.now().strftime("%H:%M:%S")
-        
-        # অ্যাডভান্সড লজিক জেনারেশন
         selected_pair = random.choice(pairs)
         direction = random.choice(["UP 🟢 (Call / Buy)", "DOWN 🔴 (Put / Sell)"])
         time_frame = random.choice(["1 Minute", "5 Minutes"])
-        accuracy = round(random.uniform(78.5, 92.3), 2)  # উইনিং একিউরেসি রেঞ্জ
+        accuracy = round(random.uniform(78.5, 92.3), 2)
         martingale = "Step 1 (সতর্কতা অবলম্বন করুন)" if accuracy < 85 else "Safe (সরাসরি নিন)"
         
         signal_text = (
@@ -103,4 +118,8 @@ def callback_query(call):
         except Exception:
             pass
 
-print("Advanced Bot is running successfully...")
+# প্রয়োজনীয় প্যাকেজে flask যোগ করতে হবে, তাই requirements.txt ফাইলে flask লিখে দিতে হবে।
+if __name__ == "__main__":
+    keep_alive()
+    bot.infinity_polling()
+    
